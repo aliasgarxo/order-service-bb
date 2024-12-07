@@ -1,0 +1,86 @@
+name: Build, Test, and Deploy
+
+on:
+  push:
+    branches:
+      - main # Trigger on pushes to the main branch
+
+jobs:
+  # Step 1: Build Job (Unit Test and Build Docker Image)
+  # Build a packaged version of the application that can run in any Docker environment.
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: echo "Simulating Install Dependencies... Install Dependencies completed successfully!"
+
+      #Test individual units or components of the code in isolation, such as functions, or classes.
+      - name: Unit Tests
+        run: echo "Simulating unit tests... Test execution completed successfully!"
+
+      - name: Log in to Docker
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker Image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_IMAGE_NAME: ${{ vars.DOCKER_IMAGE_NAME }}
+        run: |
+          docker build -t $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:test .
+
+      - name: Push Docker Image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_IMAGE_NAME: ${{ vars.DOCKER_IMAGE_NAME }}
+        run: |
+          docker push $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:test
+
+  # Step 2: Test Job (Integration Tests)
+  # Run automated tests against the containerized application to ensure it behaves as expected.
+  Test:
+    runs-on: ubuntu-latest
+
+    # Ensure the Test job only runs if Build pass
+    needs: Build
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Validate the interactions between different parts of the application
+      - name: Integration Tests
+        run: echo "Simulating integration tests... Test execution completed successfully!"
+
+  # Step 3: Release Job (Release Docker Image)
+  # Package the tested container images with version tags and push them to a container registry.
+  Release:
+    runs-on: ubuntu-latest
+
+    # Ensure the Release job only runs if Test pass
+    needs: Test
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Promote Docker Image to Latest
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_IMAGE_NAME: ${{ vars.DOCKER_IMAGE_NAME }}
+        run: |
+          docker pull $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:test
+          docker tag $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:test $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest
+          docker push $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest
