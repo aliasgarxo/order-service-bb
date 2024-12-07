@@ -3,7 +3,7 @@ name: Build, Test, and Deploy
 on:
   push:
     branches:
-      - main # Trigger on pushes to the main branch
+      - master # Trigger on pushes to the main branch
 
 jobs:
   # Step 1: Build Job (Unit Test and Build Docker Image)
